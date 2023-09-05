@@ -2,16 +2,32 @@ FROM tensorflow/tensorflow:2.2.0-gpu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
+
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
+
 # Install apt dependencies
 RUN apt-get update && apt-get install -y \
     git \
     gpg-agent \
+    apt-transport-https \
+    ca-certificates \
+    gnupg \
+    libssl-dev \
+    software-properties-common \
     python3-cairocffi \
     protobuf-compiler \
     python3-pil \
     python3-lxml \
     python3-tk \
     wget
+
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add -
+
+RUN apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+RUN apt-get update
+
+RUN yes yes | apt-get install cmake
 
 # Install gcloud and gsutil commands
 # https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
@@ -31,6 +47,7 @@ COPY --chown=tensorflow . /home/tensorflow/models
 # Compile protobuf configs
 RUN (cd /home/tensorflow/models/research/ && protoc object_detection/protos/*.proto --python_out=.)
 WORKDIR /home/tensorflow/models/research/
+
 
 RUN cp object_detection/packages/tf2/setup.py ./
 ENV PATH="/home/tensorflow/.local/bin:${PATH}"
