@@ -1,10 +1,10 @@
-FROM tensorflow/tensorflow:2.2.0-gpu
+FROM tensorflow/tensorflow:2.13.0-gpu-jupyter
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
+#RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
 
-RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
+#RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
 
 # Install apt dependencies
 RUN apt-get update && apt-get install -y \
@@ -24,10 +24,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add -
 
-RUN apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+RUN apt-add-repository 'deb https://apt.kitware.com/ubuntu/ jammy main'
 RUN apt-get update
 
-RUN yes yes | apt-get install cmake
+#RUN yes yes | apt-get install cmake
 
 # Install gcloud and gsutil commands
 # https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
@@ -37,12 +37,13 @@ RUN export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
     apt-get update -y && apt-get install google-cloud-sdk -y
 
 # Add new user to avoid running as root
-RUN useradd -ms /bin/bash tensorflow
-USER tensorflow
+#RUN useradd -ms /bin/bash tensorflow
+USER root
+RUN mkdir /home/tensorflow
 WORKDIR /home/tensorflow
 
 # Copy this version of of the model garden into the image
-COPY --chown=tensorflow . /home/tensorflow/models
+COPY --chown=tensorflow models/. /home/tensorflow/models
 
 # Compile protobuf configs
 RUN (cd /home/tensorflow/models/research/ && protoc object_detection/protos/*.proto --python_out=.)
@@ -56,3 +57,7 @@ RUN python -m pip install -U pip
 RUN python -m pip install .
 
 ENV TF_CPP_MIN_LOG_LEVEL 3
+
+COPY ./scripts /home/tensorflow/
+COPY ./workspace /home/tensorflow/
+
